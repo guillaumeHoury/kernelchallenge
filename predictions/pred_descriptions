@@ -1,0 +1,20 @@
+test_pred_1.csv :
+Score = 0.81391
+kernel = SumKernel(EdgeLabelHistogramKernel().kernel,
+                   DegreeHistogramKernel(max_degree=5, vector_kernel=Linear()).kernel,
+                   alpha1=0.15, alpha2=1).kernel
+classifier = KernelRR(lmbda=0.1, kernel=kernel, verbose=False)
+
+----------
+
+test_pred_2.csv :
+Score = 0.88279
+kernel = WLKernel(edge_attr=True, node_attr=True).kernel
+classifier = KernelRR(lmbda=1e-6, kernel=kernel, verbose=False)
+
+----------
+
+test_pred_3.csv :
+Score = 0.89043
+kernel = WLKernel(edge_attr=True, node_attr=True, iterations=5).kernel
+classifier = KernelRR(lmbda=1e-5, kernel=kernel, verbose=False)
