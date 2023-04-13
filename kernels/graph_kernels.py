@@ -3,6 +3,11 @@ from utils.utils import cooccurrence_matrix, optimized_coocurrence_matrix
 
 import numpy as np
 
+import networkx as nx
+from scipy.sparse.linalg import eigs
+import time
+import multiprocessing as mp
+
 
 class WLKernel(Kernel):
     """
@@ -60,3 +65,37 @@ class WLKernel(Kernel):
         K = optimized_coocurrence_matrix(X_hash, Y_hash, distributed=distributed)
 
         return K
+
+
+class NthWalkKernel(Kernel):
+    """
+    The Nth Walk kernel.
+    """
+    def __init__(self, edge_attr=False, node_attr=False, walk_length = 4):
+        super().__init__()
+        self.n = walk_length
+
+    def mini_kernel(self, x):
+        K_x = np.zeros(len(self.Y))
+        for j, y in enumerate(self.Y):
+            G_product = nx.tensor_product(x,y)
+            " retrait des noeuds n'ayant pas les même label du graph produit"
+            nodes_rem = []
+            for nodes in G_product.nodes:
+                a,b = (G_product.nodes[nodes]['labels'])
+                if not (a==b): nodes_rem.append(nodes)
+            for nodes in nodes_rem:
+                G_product.remove_node(nodes)
+
+            A = nx.to_numpy_array(G_product)
+            A_n = np.linalg.matrix_power(A,self.n)
+            K_x[j] = np.sum(A_n)
+        return K_x
+
+    def kernel(self, X, Y):
+        pool = mp.Pool(10)
+        self.Y = Y
+        K_temp = pool.map(self.mini_kernel, X)
+        K = np.array(K_temp)
+        return K
+
