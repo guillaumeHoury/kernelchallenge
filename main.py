@@ -1,7 +1,7 @@
 from algos.kernelrr import KernelRR
 
 from kernels.feature_vector_kernels import DegreeHistogramKernel, EdgeLabelHistogramKernel
-from kernels.graph_kernels import WLKernel
+from kernels.graph_kernels import NthWalkKernel, WLKernel
 from kernels.combine_kernels import SumKernel
 
 import pickle as pkl
@@ -11,6 +11,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split, KFold
 
 import warnings
+import time
 
 from sklearn import metrics
 
@@ -75,12 +76,38 @@ def compute_predictions(train_graphs, test_graphs, train_labels, classifier):
     dataframe.index += 1
     dataframe.to_csv('test_pred.csv', index_label='Id')
 
+def sub_index(train_graphs, train_labels, N_Zeros, N_Ones):
+    # selection d'une sous partie des données
+    train_index = np.arange(len(train_graphs))
+    one_index = train_index[train_labels == 1]
+    zero_index = train_index[train_labels == 0]
+    np.random.seed(0)
+    sub_zero_index = np.random.choice(zero_index, size = N_Zeros, replace= None)
+    sub_one_index = np.random.choice(one_index, size = N_Ones, replace= None)
+    sub_train_index = np.concatenate((sub_one_index , sub_zero_index))
+    return train_graphs[sub_train_index], train_labels[sub_train_index]
 
 if __name__ == '__main__':
     warnings.simplefilter("ignore")
     train_graphs, test_graphs, train_labels = load_data()
-    kernel = WLKernel(edge_attr=True, node_attr=True, iterations=10).kernel
-    classifier = KernelRR(lmbda=5e-5, kernel=kernel, verbose=False)
+    train_graphs, train_labels =  sub_index(train_graphs, train_labels, N_Zeros = 1000, N_Ones = 500)
+    
+    list_param = [5]
+    for param in list_param:
+        print(f"param: {param} ")
+        kernel = NthWalkKernel(walk_length=param).kernel
+        classifier = KernelRR(lmbda=5e-5, kernel=kernel, verbose=False)
+        kfold_test(train_graphs, train_labels, classifier, n_splits=3)
+""""
+    list_alphas = [[0.7, 0.1, 1.0]]#, [0.6,.2]]#, [0.7, .1, 1.], [0.7, .5, 0.5], [0.8, .6, 0.5], [0.7, .2, 0.5], [.1, .1,  1.]]
+    for alphas in list_alphas:
+        print(f"alphas: {alphas} ")
+        kernel = SumKernel([EdgeLabelHistogramKernel().kernel,
+                                DegreeHistogramKernel(max_degree=4).kernel,
+                                WLKernel(edge_attr=True, node_attr=True, iterations=10).kernel],
+                                alphas=alphas).kernel
+        classifier = KernelRR(lmbda=5e-5, kernel=kernel, verbose=False)
+        
 
-    # kfold_test(train_graphs, train_labels, classifier, n_splits=3)
-    compute_predictions(train_graphs, test_graphs, train_labels, classifier)
+        #kfold_test(train_graphs, train_labels, classifier, n_splits=3)
+        compute_predictions(train_graphs, test_graphs, train_labels, classifier)"""
