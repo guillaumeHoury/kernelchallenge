@@ -1,4 +1,4 @@
-from algos.kernelrr import KernelRR
+from algos.kernelrr import KernelRR, KernelWeightedRR
 
 from kernels.feature_vector_kernels import DegreeHistogramKernel, EdgeLabelHistogramKernel
 from kernels.graph_kernels import WLKernel
@@ -7,6 +7,8 @@ from kernels.combine_kernels import SumKernel
 import pickle as pkl
 import pandas as pd
 import numpy as np
+
+import sys
 
 from sklearn.model_selection import train_test_split, KFold
 
@@ -47,7 +49,7 @@ def kfold_test(graph, labels, classifier, n_splits=3):
     Test the classifier on the whole dataset using kfold cross-validation.
     """
 
-    kf = KFold(n_splits=n_splits, shuffle=True, random_state=20)
+    kf = KFold(n_splits=n_splits, shuffle=True, random_state=25)
     test_score = 0.
 
     for i, (train_index, test_index) in enumerate(kf.split(graph)):
@@ -79,8 +81,15 @@ def compute_predictions(train_graphs, test_graphs, train_labels, classifier):
 if __name__ == '__main__':
     warnings.simplefilter("ignore")
     train_graphs, test_graphs, train_labels = load_data()
-    kernel = WLKernel(edge_attr=True, node_attr=True, iterations=10).kernel
-    classifier = KernelRR(lmbda=5e-5, kernel=kernel, verbose=False)
 
+    import time
+    start_time = time.time()
+
+    kernel = SumKernel([DegreeHistogramKernel(max_degree=5).kernel,
+                        WLKernel(iterations=10).optimized_kernel],
+                        alphas=[0.1, 1]).kernel
+    classifier = KernelRR(lmbda=1e-4, kernel=kernel)
     # kfold_test(train_graphs, train_labels, classifier, n_splits=3)
     compute_predictions(train_graphs, test_graphs, train_labels, classifier)
+    print("--- %s seconds ---" % (time.time() - start_time))
+

@@ -18,3 +18,21 @@ test_pred_3.csv :
 Score = 0.89043
 kernel = WLKernel(edge_attr=True, node_attr=True, iterations=5).kernel
 classifier = KernelRR(lmbda=1e-5, kernel=kernel, verbose=False)
+
+----------
+
+test_pred_4.csv :
+Score = 0.89745
+kernel = WLKernel(edge_attr=True, node_attr=True, iterations=10).kernel
+classifier = KernelRR(lmbda=5e-5, kernel=kernel, verbose=False)
+(with normalization of co-occurence matrix)
+
+----------
+
+test_pred_5.csv :
+Score = 0.90044
+kernel = SumKernel([DegreeHistogramKernel(max_degree=5).kernel,
+                    WLKernel(edge_attr=True, node_attr=True, iterations=10).kernel],
+                    alphas=[0.1, 1]).kernel
+classifier = KernelRR(lmbda=5e-5, kernel=kernel, verbose=False)
+(with normalization of co-occurence matrix)
