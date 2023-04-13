@@ -1,4 +1,6 @@
 # kernelchallenge
+Jean-Frederic Diebold, Guillaume Houry
+April 2023
 
 To launch the script, use the following command in terminal:
 
