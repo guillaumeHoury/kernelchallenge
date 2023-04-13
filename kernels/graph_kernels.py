@@ -4,8 +4,6 @@ from utils.utils import cooccurrence_matrix, optimized_coocurrence_matrix
 import numpy as np
 
 import networkx as nx
-from scipy.sparse.linalg import eigs
-import time
 import multiprocessing as mp
 
 
@@ -13,11 +11,17 @@ class WLKernel(Kernel):
     """
     The Weisfeler-Lehman subraph kernel.
     """
-    def __init__(self, iterations=3):
+    def __init__(self, iterations=3, distributed=True):
         super().__init__()
         self.iterations = iterations
+        self.distributed = distributed
 
     def weisfeiler_lehman_subgraph_hashes(self, G):
+        """
+        Computes the WL subgraph hashes.
+        :param G: A networkx graph.
+        :return: A list of list of hashes (one list for each node).
+        """
         # Initialize labels
         labels = {node: str(G.nodes[node]['labels']) for node in G.nodes()}
 
@@ -42,6 +46,7 @@ class WLKernel(Kernel):
 
     def kernel(self, X, Y):
         # Input lists of graphs X and Y of len N and M
+
         X_hash = [sorted(
             [subgraph_hash for vertex_hash in self.weisfeiler_lehman_subgraph_hashes(G).values() for subgraph_hash in
              vertex_hash]) for G in X]
@@ -49,11 +54,14 @@ class WLKernel(Kernel):
             [subgraph_hash for vertex_hash in self.weisfeiler_lehman_subgraph_hashes(G).values() for subgraph_hash in
              vertex_hash]) for G in Y]
 
-        K = np.array(cooccurrence_matrix(X_hash, Y_hash))
+        K = np.array(cooccurrence_matrix(X_hash, Y_hash, distributed=self.distributed))
 
         return K
 
-    def optimized_kernel(self, X, Y, distributed=True):
+    def optimized_kernel(self, X, Y):
+        """
+        Optimized version of the kernel computation.
+        """
         # Input lists of graphs X and Y of len N and M
         X_hash = [sorted(
             [subgraph_hash for vertex_hash in self.weisfeiler_lehman_subgraph_hashes(G).values() for subgraph_hash in
@@ -62,7 +70,7 @@ class WLKernel(Kernel):
             [subgraph_hash for vertex_hash in self.weisfeiler_lehman_subgraph_hashes(G).values() for subgraph_hash in
              vertex_hash]) for G in Y]
 
-        K = optimized_coocurrence_matrix(X_hash, Y_hash, distributed=distributed)
+        K = optimized_coocurrence_matrix(X_hash, Y_hash, distributed=self.distributed)
 
         return K
 

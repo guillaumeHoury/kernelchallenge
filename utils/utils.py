@@ -26,7 +26,7 @@ def count_coocurrences(list1, list2, normalized=True):
         return count
 
 
-def cooccurrence_matrix(array1, array2):
+def cooccurrence_matrix(array1, array2, distributed=True):
     """
     Compute the co-occurence matrix between the two arrays.
     array1: list of lists
@@ -37,8 +37,11 @@ def cooccurrence_matrix(array1, array2):
 
     mesh1, mesh2 = np.meshgrid(np.array(array1), np.array(array2))
 
-    with mp.Pool() as p:
-        M = p.starmap(count_coocurrences, zip(mesh1.flatten(), mesh2.flatten()))
+    if distributed:
+        with mp.Pool() as p:
+            M = p.starmap(count_coocurrences, zip(mesh1.flatten(), mesh2.flatten()))
+    else:
+        M = [count_coocurrences(i, j) for (i, j) in zip(mesh1.flatten(), mesh2.flatten())]
 
     M = np.array(M).reshape(L, K).transpose()
 

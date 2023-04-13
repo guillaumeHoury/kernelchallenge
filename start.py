@@ -31,8 +31,7 @@ def test_classifier(graphs, labels, classifier):
     """
     Test the classifier on a test split of the dataset.
     """
-
-    train_graphs, test_graphs, train_labels, test_labels = train_test_split(graphs, labels, test_size=0.3, random_state=None)
+    train_graphs, test_graphs, train_labels, test_labels = train_test_split(graphs, labels, test_size=0.3)
 
     classifier.fit(train_graphs, train_labels)
 
@@ -47,8 +46,7 @@ def kfold_test(graph, labels, classifier, n_splits=3):
     """
     Test the classifier on the whole dataset using kfold cross-validation.
     """
-
-    kf = KFold(n_splits=n_splits, shuffle=True, random_state=20)
+    kf = KFold(n_splits=n_splits, shuffle=True)
     test_score = 0.
 
     for i, (train_index, test_index) in enumerate(kf.split(graph)):
@@ -77,11 +75,27 @@ def compute_predictions(train_graphs, test_graphs, train_labels, classifier):
     dataframe.to_csv('test_pred.csv', index_label='Id')
 
 
-if __name__ == '__main__':
+def start():
     warnings.simplefilter("ignore")
     train_graphs, test_graphs, train_labels = load_data()
-    kernel = WLKernel(edge_attr=True, node_attr=True, iterations=10).kernel
-    classifier = KernelRR(lmbda=5e-5, kernel=kernel, verbose=False)
 
-    # kfold_test(train_graphs, train_labels, classifier, n_splits=3)
+    kernel = SumKernel([DegreeHistogramKernel(max_degree=5).kernel,
+                        WLKernel(iterations=10, distributed=True).optimized_kernel],
+                       alphas=[0.1, 1]).kernel
+
+    # On Windows, multiprocessing may be inefficient, and it could be worth to perform commputations on a single CPU.
+    # To do so, uncomment the following line:
+    """kernel = SumKernel([DegreeHistogramKernel(max_degree=5).kernel,
+                        WLKernel(iterations=10, distributed=False).optimized_kernel],
+                       alphas=[0.1, 1]).kernel"""
+    classifier = KernelRR(lmbda=1e-4, kernel=kernel, verbose=False)
+
     compute_predictions(train_graphs, test_graphs, train_labels, classifier)
+
+
+if __name__ == '__main__':
+    start_time = time.time()
+    start()
+    print("--- %s seconds ---" % (time.time() - start_time))
+
+

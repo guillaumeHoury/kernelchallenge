@@ -2,6 +2,9 @@ import numpy as np
 
 
 class Kernel:
+    """
+    Abstract kernel class
+    """
     def __init__(self):
         pass
 

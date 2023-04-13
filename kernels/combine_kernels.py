@@ -3,6 +3,9 @@ import numpy as np
 
 
 class SumKernel(Kernel):
+    """
+    The weighted sum kernel of an arbitrary number of subkernels.
+    """
     def __init__(self, kernels, alphas=None):
         super().__init__()
         self.kernels = kernels
